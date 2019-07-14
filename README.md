@@ -1,13 +1,12 @@
-Our application aims to provide accurate and accessable information following nateral diasters.
-Users can connect to each others phones via wifi passing information such as emergency meeting points and locations
-of friends or family.
-
 
 ## Releave
 
 
 
-Releave
+Releave O aims to provide accurate and accessable information following a nateral diaster.
+
+Users can connect to each others phones via wifi passing information such as emergency meeting points and locations
+of friends or family.
 
 
 ## Usage
