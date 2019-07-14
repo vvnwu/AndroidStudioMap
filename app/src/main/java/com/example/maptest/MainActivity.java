@@ -1,316 +1,130 @@
 package com.example.maptest;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.graphics.BitmapFactory;
-import android.graphics.Color;
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
-import com.cloudant.client.api.CloudantClient;
-import com.mapbox.geojson.BoundingBox;
-import com.mapbox.geojson.Feature;
-import com.mapbox.geojson.FeatureCollection;
-import com.mapbox.geojson.GeoJson;
-import com.mapbox.geojson.Point;
-import com.mapbox.mapboxsdk.Mapbox;
-import com.mapbox.mapboxsdk.maps.MapView;
-import com.mapbox.mapboxsdk.maps.MapboxMap;
-import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
-import com.mapbox.mapboxsdk.maps.Style;
-import com.cloudant.client.api.ClientBuilder;
-import com.cloudant.client.api.Database;
-import com.mapbox.mapboxsdk.style.expressions.Expression;
-import com.mapbox.mapboxsdk.style.layers.CircleLayer;
-import com.mapbox.mapboxsdk.style.layers.PropertyFactory;
-import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
-import com.mapbox.mapboxsdk.style.sources.GeoJsonOptions;
-import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
+import android.text.TextWatcher;
+import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
+import android.widget.EditText;
+import android.text.Editable;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+import android.widget.Toast;
+import android.view.KeyEvent;
+import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProviders;
 
-import android.os.CountDownTimer;
-import android.os.Debug;
-import android.util.Log;
-
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-
-/* Map styling imports */
-import static com.mapbox.mapboxsdk.style.expressions.Expression.get;
-import static com.mapbox.mapboxsdk.style.expressions.Expression.literal;
-import static com.mapbox.mapboxsdk.style.expressions.Expression.toNumber;
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleBlur;
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleColor;
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleRadius;
-
-public class MainActivity extends AppCompatActivity {
-    private MapView mapView;
-    private Database personDatabase;
-    private Database hotSpotDatabase;
-    public static List<Hotspot> updatedListOfHotspots = null;
-    static final String SETTINGS_CLOUDANT_USER = "c7377986-7eac-49f8-b7cb-96c3558dcf38-bluemix";
-    static final String SETTINGS_CLOUDANT_PERSON_DB = "person";
-    static final String SETTINGS_CLOUDANT_HOTSPOT_DB = "hotspots";
-    static final String SETTINGS_CLOUDANT_API_KEY = "jvQ4jwlpmuQo2-NUjisRcbQPMZYB0jBoGxJdG0-7P_Dn";
-    static final String SETTINGS_CLOUDANT_API_SECRET = "bdfcc0f2c073edafe9fbf960a62210e14749b77d540319e4a83e80e09c4637e4";
-
+    public class MainActivity extends AppCompatActivity {
+        private LoginViewModel loginViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
-        /*
-         * Initialize IBM Cloudant
-         */
-        initIBMCloudant();
-        //pushMyLocation(new Person("Vivian", 69.69,69.69)); //for testing
-        pushMyHotspot(generateHotSpots()); //for testing
-        PullHotSpotInfo();
-
         super.onCreate(savedInstanceState);
-        Mapbox.getInstance(this, "pk.eyJ1IjoidnZud3UiLCJhIjoiY2p5MjN0NmdyMGl2bjNibHEydW1kM3R4diJ9.TVwh3UbhnFFQAXiH6_-kWg");
-        setContentView(R.layout.activity_main);
-        mapView = findViewById(R.id.mapView);
-        mapView.onCreate(savedInstanceState);
-        mapView.getMapAsync(new OnMapReadyCallback() {
+        loginViewModel = ViewModelProviders.of(this, new LoginViewModelFactory())
+                .get(LoginViewModel.class);
+
+        final EditText usernameEditText = findViewById(R.id.username);
+        final EditText passwordEditText = findViewById(R.id.password);
+        final Button loginButton = findViewById(R.id.login);
+        final ProgressBar loadingProgressBar = findViewById(R.id.loading);
+
+        loginViewModel.getLoginFormState().observe(this, new Observer<LoginFormState>() {
             @Override
-            public void onMapReady(@NonNull MapboxMap mapboxMap) {
-                mapboxMap.setStyle(Style.DARK, new Style.OnStyleLoaded() {
-                    @Override
-                    public void onStyleLoaded(@NonNull final Style style) {
-                        new CountDownTimer(5000,1000){
-                            public void onFinish(){
-                                addClusteredGeoJsonSource(style);
-                            }
-                            public void onTick(long millisUntilFinished) {
-                                // millisUntilFinished    The amount of time until finished.
-                            }
-                        }.start();
+            public void onChanged(@Nullable LoginFormState loginFormState) {
+                if (loginFormState == null) {
+                    return;
+                }
+                loginButton.setEnabled(loginFormState.isDataValid());
+                if (loginFormState.getUsernameError() != null) {
+                    usernameEditText.setError(getString(loginFormState.getUsernameError()));
+                }
+                if (loginFormState.getPasswordError() != null) {
+                    passwordEditText.setError(getString(loginFormState.getPasswordError()));
+                }
+            }
+        });
+        loginViewModel.getLoginResult().observe(this, new Observer<LoginResult>() {
+            @Override
+            public void onChanged(@Nullable LoginResult loginResult) {
+                if (loginResult == null) {
+                    return;
+                }
+                loadingProgressBar.setVisibility(View.GONE);
+                if (loginResult.getError() != null) {
+                    showLoginFailed(loginResult.getError());
+                }
+                if (loginResult.getSuccess() != null) {
+                    updateUiWithUser(loginResult.getSuccess());
 
+                }
+                setResult(Activity.RESULT_OK);
 
-                    }
-                });
+                //Complete and destroy login activity once successful
+
+                startActivity(new Intent(MainActivity.this, Map.class));
             }
         });
 
-    }
-
-    /* Preload the map with coordinates obtained from the server */
-    public static void addClusteredGeoJsonSource(@NonNull Style loadedMapStyle) {
-
-        try {
-
-                Log.d("DEBUG",createGeoJSONList(updatedListOfHotspots));
-                loadedMapStyle.addSource(
-                        new GeoJsonSource("earthquakes",
-                                createGeoJSONList(updatedListOfHotspots),
-                                new GeoJsonOptions()
-                                        .withCluster(true)
-                                        .withClusterMaxZoom(30) // Max zoom to cluster points on
-                                        .withClusterRadius(50) // Use small cluster radius for the hotspots look
-                        )
-                );
-            } catch (Exception e) {
-
-                Log.d("ERROR", e.toString());
-
+        TextWatcher afterTextChangedListener = new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // ignore
             }
-
-
-            final int[][] layers = new int[][] {
-                    new int[] {150, Color.parseColor("#E55E5E")}, //light red
-                    new int[] {20, Color.parseColor("#F9886C")}, //darker orange
-                    new int[] {0, Color.parseColor("#FBB03B")} //orange
-            };
-
-            CircleLayer unclustered = new CircleLayer("unclustered-points", "earthquakes");
-            unclustered.setProperties(
-                    circleColor(Color.parseColor("#FBB03B")), //orange
-                    circleRadius(20f),
-                    circleBlur(1f));
-            unclustered.setFilter(Expression.neq(get("cluster"), literal(true)));
-            loadedMapStyle.addLayerBelow(unclustered, "building");
-
-            for (int i = 0; i < layers.length; i++) {
-                CircleLayer circles = new CircleLayer("cluster-" + i, "earthquakes");
-                circles.setProperties(
-                        circleColor(layers[i][1]),
-                        circleRadius(70f),
-                        circleBlur(1f)
-                );
-                Expression pointCount = toNumber(get("point_count"));
-                circles.setFilter(
-                        i == 0
-                                ? Expression.gte(pointCount, literal(layers[i][0])) :
-                                Expression.all(
-                                        Expression.gte(pointCount, literal(layers[i][0])),
-                                        Expression.lt(pointCount, literal(layers[i - 1][0]))
-                                )
-                );
-                loadedMapStyle.addLayerBelow(circles, "building");
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // ignore
             }
-        }
-
-    /* Method to update HotSpot listings stored in this class' instance variables */
-    public static void updateHotSpots(List<Hotspot> myHotSpots){
-        updatedListOfHotspots = myHotSpots;
-
-    }
-    /* Method to initiate IBM Cloudant */
-    public void initIBMCloudant(){
-
-        CloudantClient client;
-        client = ClientBuilder.account(SETTINGS_CLOUDANT_USER).username(SETTINGS_CLOUDANT_API_KEY).password(SETTINGS_CLOUDANT_API_SECRET).build();
-        this.personDatabase = client.database(SETTINGS_CLOUDANT_PERSON_DB,false);
-        this.hotSpotDatabase = client.database(SETTINGS_CLOUDANT_HOTSPOT_DB,false);
-
-    }
-
-    /* Method to Post to IBM Cloudant using Android AsyncTask */
-    public void pushMyLocation(Person myPerson){
-
-        try{
-            if(personDatabase != null){
-            UploadPersonToCloudant myUploader = new UploadPersonToCloudant(personDatabase);
-            myUploader.execute(myPerson);
+            @Override
+            public void afterTextChanged(Editable s) {
+                loginViewModel.loginDataChanged(usernameEditText.getText().toString(),
+                        passwordEditText.getText().toString());
             }
-        }catch(Exception e){
-            Log.d("ERROR", e.toString());
-        }
+        };
 
-    }
+        if(usernameEditText !=  null){
+        usernameEditText.addTextChangedListener(afterTextChangedListener);}
 
-    /* Method to Push Latest Hotspot Information from IBM Cloudant */
-    public void pushMyHotspot(Hotspot [] myHotspots){
-
-        try{
-            if(hotSpotDatabase != null){
-                UploadHotSpotToCloudant myUploader = new UploadHotSpotToCloudant(hotSpotDatabase);
-                myUploader.execute(myHotspots);
-            }
-        }catch(Exception e){
-            Log.d("ERROR", e.toString());
-        }
-
-    }
-
-    /* Method that helps us generate a smaple list of hotspots */
-    public Hotspot[] generateHotSpots(){
-        Hotspot [] listOfHotSpots = new Hotspot[11];
-        listOfHotSpots[0] = new Hotspot(47.6205,-122.3493, "Spaceneedle", true);
-        listOfHotSpots[1] = new Hotspot(47.6084,-122.3405, "Pike Place Market", true);
-        listOfHotSpots[2] = new Hotspot(47.6206,-122.3505, "Chihuly Garden and Glass", true);
-        listOfHotSpots[3] = new Hotspot(47.6215,-122.3481, "Museum of Pop Culture", true);
-        listOfHotSpots[4] = new Hotspot(47.6219,-122.3517, "Seattle Center", true);
-        listOfHotSpots[5] = new Hotspot(47.6073,-122.3381, "Seattle Art Museum", true);
-        listOfHotSpots[6] = new Hotspot(47.5180,-122.2964, "The Museum of Flight", true);
-        listOfHotSpots[7] = new Hotspot(47.6685,-122.3543, "Woodland Park Zoo", true);
-        listOfHotSpots[8] = new Hotspot(47.3623,-122.1953, "Madison Centre", true);
-        listOfHotSpots[9] = new Hotspot(47.6019066,-122.3385206, "King Street Station", true);
-        listOfHotSpots[10] = new Hotspot(47.5982618,-122.3312084, "Getty Images", true);
-
-        return listOfHotSpots;
-    }
-    /* Method to Pull Latest Hotspot Information from IBM Cloudant */
+        if(passwordEditText != null){
+        passwordEditText.addTextChangedListener(afterTextChangedListener);}
 
 
-    public void PullHotSpotInfo(){
+        if(passwordEditText != null){
+        passwordEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
 
-
-        try{
-            DownloadHotSpots myDownloader = new DownloadHotSpots();
-            myDownloader.execute(hotSpotDatabase);
-
-        }
-        catch(Exception e){
-            Log.d("ERROR", e.toString());
-        }
-
-    }
-    public static String createGeoJSONList(List<Hotspot> listOfHotspots){
-
-        //Parses the list of updated hotspots into individual strings
-        List<String> myStrings = new ArrayList<String>();
-        for(Hotspot h: listOfHotspots){
-            myStrings.add(h.getGeoJSON());
-
-        }
-        //Create a final GeoJSON list of coordinates for app's map.
-        if(!myStrings.isEmpty()){
-            String firstPart = "{\n" + "\"type\": \"FeatureCollection\",\n"
-                    //+ "\"crs\": { \"type\": \"name\", \"properties\": { \"name\": \"urn:ogc:def:crs:OGC:1.3:CRS84\" } },\n"
-                    + "\"features\": [";
-            StringBuilder myFinalString = new StringBuilder(firstPart);
-            String lastPart = "]\n" + "}";
-            for(int i = 0; myStrings.size() > i; i++){
-
-                if(i == myStrings.size() - 1 ){
-                    myFinalString.append(",");
-                    myFinalString.append(myStrings.get(i));
-                    myFinalString.append(lastPart);
-                    //the last element
+                    loginViewModel.login(usernameEditText.getText().toString(),
+                            passwordEditText.getText().toString());
                 }
-                else if(i == 0){
-                    myFinalString.append(myStrings.get(i));
-                    //the first element
-
-                }
-                else{
-                    myFinalString.append(",");
-                    myFinalString.append(myStrings.get(i));
-                    //every other string in the list
-                }
+                return false;
             }
-            return(myFinalString.toString());
-        }
-        else{
+        });}
 
-            Log.d("DEBUG","didnt work");
-            //Do nothing if no hotspots in the list.
-            return null;
-        }
 
+        if(loginButton != null){
+        loginButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                loadingProgressBar.setVisibility(View.VISIBLE);
+                startActivity(new Intent(MainActivity.this, Map.class));
+                loginViewModel.login(usernameEditText.getText().toString(),
+                        passwordEditText.getText().toString());
+
+            }
+        });}
 
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-        mapView.onStart();
+    private void updateUiWithUser(LoggedInUserView model) {
+        String welcome = "Welcome!";
+        Toast.makeText(getApplicationContext(), welcome, Toast.LENGTH_LONG).show();
     }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        mapView.onResume();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        mapView.onPause();
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        mapView.onStop();
-    }
-
-    @Override
-    public void onLowMemory() {
-        super.onLowMemory();
-        mapView.onLowMemory();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        mapView.onDestroy();
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        mapView.onSaveInstanceState(outState);
+    private void showLoginFailed(@StringRes Integer errorString) {
+        Toast.makeText(getApplicationContext(), errorString, Toast.LENGTH_SHORT).show();
     }
 }
