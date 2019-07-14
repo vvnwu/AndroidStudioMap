@@ -17,7 +17,7 @@ public class UploadHotSpotToCloudant extends AsyncTask<Hotspot, Integer, String>
     protected String doInBackground(Hotspot ... params) {
         // get the Person from params, which is an array
 
-        for (int i = 0; i <= params.length; i++) {
+        for (int i = 0; i < params.length; i++) {
             // Call this to update your progress
             try{
                 db.post(params[i]);}
@@ -25,7 +25,7 @@ public class UploadHotSpotToCloudant extends AsyncTask<Hotspot, Integer, String>
                 Log.d("ERROR", e.toString());
             }
         }
-        return "finished";
+        return "Finished Downloading";
     }
 
     // This is called from background thread but runs in UI

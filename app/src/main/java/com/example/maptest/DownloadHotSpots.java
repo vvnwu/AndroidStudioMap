@@ -28,7 +28,8 @@ public class DownloadHotSpots extends AsyncTask<Database, Void, List<Hotspot>>{
     @Override
     protected void onPostExecute(List<Hotspot> result) {
         //do stuff
-        MainActivity.updateHotSpots(result);
+        Map.updateHotSpots(result);
+
 
     }
 
