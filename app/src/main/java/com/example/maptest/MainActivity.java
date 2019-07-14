@@ -1,6 +1,7 @@
 package com.example.maptest;
 
 import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.IntentFilter;
 import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.WifiP2pDevice;
@@ -9,6 +10,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -32,7 +34,6 @@ public class MainActivity extends AppCompatActivity {
     WifiP2pManager.Channel mChannel;
     BroadcastReceiver mReceiver;
     IntentFilter mIntentFilter;
-
 
 
     @Override
@@ -96,15 +97,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 manager.discoverPeers(mChannel, new WifiP2pManager.ActionListener() {
+                    Context context = getApplicationContext();
                     @Override
                     public void onSuccess() {
-                        System.out.println("Success");
+                        Toast.makeText(context, "Scanning area...", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
                     public void onFailure(int reasonCode) {
-                        System.out.println("Fail");
-                        System.out.println(reasonCode);
+                        Toast.makeText(context, "Unable to scan...", Toast.LENGTH_SHORT).show();
                     }
                 });
             }
