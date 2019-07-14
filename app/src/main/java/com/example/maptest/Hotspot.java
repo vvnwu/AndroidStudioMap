@@ -18,7 +18,7 @@ public class Hotspot {
 
         String firstPart = "{\"type\": \"Feature\", \"geometry\": { \"type\": \"Point\", \"coordinates\": [";
         String middlePart = ", ";
-        String lastPart = "]},\"properties\": {\"name\": \"Dinagat Islands\"}}";
+        String lastPart = "]},\"properties\": {\"name\":\"" + locName + "\"}}";
         StringBuilder myStringBuilder = new StringBuilder(firstPart).append(locLatitude).append(middlePart).append(locLongitude).append(lastPart);
         return myStringBuilder.toString();
     }

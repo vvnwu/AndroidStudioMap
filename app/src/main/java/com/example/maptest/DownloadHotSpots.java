@@ -30,6 +30,7 @@ public class DownloadHotSpots extends AsyncTask<Database, Void, List<Hotspot>>{
         //do stuff
         MainActivity.updateHotSpots(result);
 
+
     }
 
 }

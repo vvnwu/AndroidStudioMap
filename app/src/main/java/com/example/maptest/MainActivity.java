@@ -2,8 +2,16 @@ package com.example.maptest;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.os.Bundle;
 import com.cloudant.client.api.CloudantClient;
+import com.mapbox.geojson.BoundingBox;
+import com.mapbox.geojson.Feature;
+import com.mapbox.geojson.FeatureCollection;
+import com.mapbox.geojson.GeoJson;
+import com.mapbox.geojson.Point;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
@@ -11,9 +19,29 @@ import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapbox.mapboxsdk.maps.Style;
 import com.cloudant.client.api.ClientBuilder;
 import com.cloudant.client.api.Database;
+import com.mapbox.mapboxsdk.style.expressions.Expression;
+import com.mapbox.mapboxsdk.style.layers.CircleLayer;
+import com.mapbox.mapboxsdk.style.layers.PropertyFactory;
+import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
+import com.mapbox.mapboxsdk.style.sources.GeoJsonOptions;
+import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
+
+import android.os.CountDownTimer;
+import android.os.Debug;
 import android.util.Log;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
+/* Map styling imports */
+import static com.mapbox.mapboxsdk.style.expressions.Expression.get;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.literal;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.toNumber;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleBlur;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleColor;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleRadius;
 
 public class MainActivity extends AppCompatActivity {
     private MapView mapView;
@@ -30,6 +58,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
+        /*
+         * Initialize IBM Cloudant
+         */
+        initIBMCloudant();
+        //pushMyLocation(new Person("Vivian", 69.69,69.69)); //for testing
+        pushMyHotspot(generateHotSpots()); //for testing
+        PullHotSpotInfo();
+
         super.onCreate(savedInstanceState);
         Mapbox.getInstance(this, "pk.eyJ1IjoidnZud3UiLCJhIjoiY2p5MjN0NmdyMGl2bjNibHEydW1kM3R4diJ9.TVwh3UbhnFFQAXiH6_-kWg");
         setContentView(R.layout.activity_main);
@@ -38,39 +74,88 @@ public class MainActivity extends AppCompatActivity {
         mapView.getMapAsync(new OnMapReadyCallback() {
             @Override
             public void onMapReady(@NonNull MapboxMap mapboxMap) {
-                mapboxMap.setStyle(Style.MAPBOX_STREETS, new Style.OnStyleLoaded() {
+                mapboxMap.setStyle(Style.DARK, new Style.OnStyleLoaded() {
                     @Override
-                    public void onStyleLoaded(@NonNull Style style) {
+                    public void onStyleLoaded(@NonNull final Style style) {
+                        new CountDownTimer(5000,1000){
+                            public void onFinish(){
+                                addClusteredGeoJsonSource(style);
+                            }
+                            public void onTick(long millisUntilFinished) {
+                                // millisUntilFinished    The amount of time until finished.
+                            }
+                        }.start();
 
-// Map is set up and the style has loaded. Now you can add data or make other map adjustments
 
                     }
                 });
             }
         });
 
-
-        /*
-         * Initialize IBM Cloudant
-         */
-        initIBMCloudant();
-        //pushMyLocation(new Person("Vivian", 69.69,69.69));
-        //pushMyHotspot(generateHotSpots());
-        PullHotSpotInfo();
-
     }
 
-    /* Method to Initialize IBM Cloudant Database */
+    /* Preload the map with coordinates obtained from the server */
+    public static void addClusteredGeoJsonSource(@NonNull Style loadedMapStyle) {
 
+        try {
+
+                Log.d("DEBUG",createGeoJSONList(updatedListOfHotspots));
+                loadedMapStyle.addSource(
+                        new GeoJsonSource("earthquakes",
+                                createGeoJSONList(updatedListOfHotspots),
+                                new GeoJsonOptions()
+                                        .withCluster(true)
+                                        .withClusterMaxZoom(30) // Max zoom to cluster points on
+                                        .withClusterRadius(50) // Use small cluster radius for the hotspots look
+                        )
+                );
+            } catch (Exception e) {
+
+                Log.d("ERROR", e.toString());
+
+            }
+
+
+            final int[][] layers = new int[][] {
+                    new int[] {150, Color.parseColor("#E55E5E")}, //light red
+                    new int[] {20, Color.parseColor("#F9886C")}, //darker orange
+                    new int[] {0, Color.parseColor("#FBB03B")} //orange
+            };
+
+            CircleLayer unclustered = new CircleLayer("unclustered-points", "earthquakes");
+            unclustered.setProperties(
+                    circleColor(Color.parseColor("#FBB03B")), //orange
+                    circleRadius(20f),
+                    circleBlur(1f));
+            unclustered.setFilter(Expression.neq(get("cluster"), literal(true)));
+            loadedMapStyle.addLayerBelow(unclustered, "building");
+
+            for (int i = 0; i < layers.length; i++) {
+                CircleLayer circles = new CircleLayer("cluster-" + i, "earthquakes");
+                circles.setProperties(
+                        circleColor(layers[i][1]),
+                        circleRadius(70f),
+                        circleBlur(1f)
+                );
+                Expression pointCount = toNumber(get("point_count"));
+                circles.setFilter(
+                        i == 0
+                                ? Expression.gte(pointCount, literal(layers[i][0])) :
+                                Expression.all(
+                                        Expression.gte(pointCount, literal(layers[i][0])),
+                                        Expression.lt(pointCount, literal(layers[i - 1][0]))
+                                )
+                );
+                loadedMapStyle.addLayerBelow(circles, "building");
+            }
+        }
+
+    /* Method to update HotSpot listings stored in this class' instance variables */
     public static void updateHotSpots(List<Hotspot> myHotSpots){
         updatedListOfHotspots = myHotSpots;
 
-        for(Hotspot h: updatedListOfHotspots){
-
-            Log.d("DEBUG", h.getGeoJSON());
-            //populate into map
-        }
     }
+    /* Method to initiate IBM Cloudant */
     public void initIBMCloudant(){
 
         CloudantClient client;
@@ -79,6 +164,7 @@ public class MainActivity extends AppCompatActivity {
         this.hotSpotDatabase = client.database(SETTINGS_CLOUDANT_HOTSPOT_DB,false);
 
     }
+
     /* Method to Post to IBM Cloudant using Android AsyncTask */
     public void pushMyLocation(Person myPerson){
 
@@ -94,7 +180,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /* Method to Push Latest Hotspot Information from IBM Cloudant */
-
     public void pushMyHotspot(Hotspot [] myHotspots){
 
         try{
@@ -108,16 +193,21 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    /* Method that helps us generate a smaple list of hotspots */
     public Hotspot[] generateHotSpots(){
-        Hotspot [] listOfHotSpots = new Hotspot[8];
-        listOfHotSpots[0] = new Hotspot(100,100, "Spaceneedle", true);
-        listOfHotSpots[1] = new Hotspot(100,100, "Pike Place Market", true);
-        listOfHotSpots[2] = new Hotspot(100,100, "Chihuly Garden and Glass", true);
-        listOfHotSpots[3] = new Hotspot(100,100, "Museum of Pop Culture", true);
-        listOfHotSpots[4] = new Hotspot(100,100, "Seattle Center", true);
-        listOfHotSpots[5] = new Hotspot(100,100, "Seattle Art Museum", true);
-        listOfHotSpots[6] = new Hotspot(100,100, "The Museum of Flight", true);
-        listOfHotSpots[7] = new Hotspot(100,100, "Woodland Park Zoo", true);
+        Hotspot [] listOfHotSpots = new Hotspot[11];
+        listOfHotSpots[0] = new Hotspot(47.6205,-122.3493, "Spaceneedle", true);
+        listOfHotSpots[1] = new Hotspot(47.6084,-122.3405, "Pike Place Market", true);
+        listOfHotSpots[2] = new Hotspot(47.6206,-122.3505, "Chihuly Garden and Glass", true);
+        listOfHotSpots[3] = new Hotspot(47.6215,-122.3481, "Museum of Pop Culture", true);
+        listOfHotSpots[4] = new Hotspot(47.6219,-122.3517, "Seattle Center", true);
+        listOfHotSpots[5] = new Hotspot(47.6073,-122.3381, "Seattle Art Museum", true);
+        listOfHotSpots[6] = new Hotspot(47.5180,-122.2964, "The Museum of Flight", true);
+        listOfHotSpots[7] = new Hotspot(47.6685,-122.3543, "Woodland Park Zoo", true);
+        listOfHotSpots[8] = new Hotspot(47.3623,-122.1953, "Madison Centre", true);
+        listOfHotSpots[9] = new Hotspot(47.6019066,-122.3385206, "King Street Station", true);
+        listOfHotSpots[10] = new Hotspot(47.5982618,-122.3312084, "Getty Images", true);
+
         return listOfHotSpots;
     }
     /* Method to Pull Latest Hotspot Information from IBM Cloudant */
@@ -136,7 +226,51 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
+    public static String createGeoJSONList(List<Hotspot> listOfHotspots){
 
+        //Parses the list of updated hotspots into individual strings
+        List<String> myStrings = new ArrayList<String>();
+        for(Hotspot h: listOfHotspots){
+            myStrings.add(h.getGeoJSON());
+
+        }
+        //Create a final GeoJSON list of coordinates for app's map.
+        if(!myStrings.isEmpty()){
+            String firstPart = "{\n" + "\"type\": \"FeatureCollection\",\n"
+                    //+ "\"crs\": { \"type\": \"name\", \"properties\": { \"name\": \"urn:ogc:def:crs:OGC:1.3:CRS84\" } },\n"
+                    + "\"features\": [";
+            StringBuilder myFinalString = new StringBuilder(firstPart);
+            String lastPart = "]\n" + "}";
+            for(int i = 0; myStrings.size() > i; i++){
+
+                if(i == myStrings.size() - 1 ){
+                    myFinalString.append(",");
+                    myFinalString.append(myStrings.get(i));
+                    myFinalString.append(lastPart);
+                    //the last element
+                }
+                else if(i == 0){
+                    myFinalString.append(myStrings.get(i));
+                    //the first element
+
+                }
+                else{
+                    myFinalString.append(",");
+                    myFinalString.append(myStrings.get(i));
+                    //every other string in the list
+                }
+            }
+            return(myFinalString.toString());
+        }
+        else{
+
+            Log.d("DEBUG","didnt work");
+            //Do nothing if no hotspots in the list.
+            return null;
+        }
+
+
+    }
 
     @Override
     public void onStart() {
