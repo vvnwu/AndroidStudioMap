@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:mapbox="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -14,15 +13,42 @@
         android:layout_height="match_parent"
         mapbox:mapbox_cameraTargetLat="47.6062"
         mapbox:mapbox_cameraTargetLng="122.3321"
-        mapbox:mapbox_cameraZoom="11" />
+        mapbox:mapbox_cameraZoom="11">
+    </com.mapbox.mapboxsdk.maps.MapView>
+    <LinearLayout android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
+        <TextView
+            android:id="@+id/text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:layout_editor_absoluteX="116dp"
+            tools:layout_editor_absoluteY="325dp" />
+
+        <Button
+            android:id="@+id/connectButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Connect"
+            tools:layout_editor_absoluteX="104dp"
+            tools:layout_editor_absoluteY="377dp" />
+
+        <Button
+            android:id="@+id/discoverPeers"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Discover"
+            tools:layout_editor_absoluteX="104dp"
+            tools:layout_editor_absoluteY="377dp" />
+
+    </LinearLayout>
     <!--<TextView-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:text="Hello World!"-->
-        <!--app:layout_constraintBottom_toBottomOf="parent"-->
-        <!--app:layout_constraintLeft_toLeftOf="parent"-->
-        <!--app:layout_constraintRight_toRightOf="parent"-->
-        <!--app:layout_constraintTop_toTopOf="parent" />-->
+    <!--android:layout_width="wrap_content"-->
+    <!--android:layout_height="wrap_content"-->
+    <!--android:text="Hello World!"-->
+    <!--app:layout_constraintBottom_toBottomOf="parent"-->
+    <!--app:layout_constraintLeft_toLeftOf="parent"-->
+    <!--app:layout_constraintRight_toRightOf="parent"-->
+    <!--app:layout_constraintTop_toTopOf="parent" />-->
 
 </androidx.constraintlayout.widget.ConstraintLayout>

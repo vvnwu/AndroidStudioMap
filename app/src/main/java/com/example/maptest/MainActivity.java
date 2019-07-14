@@ -1,22 +1,59 @@
 package com.example.maptest;
 
+import android.content.BroadcastReceiver;
+import android.content.IntentFilter;
+import android.net.wifi.WifiManager;
+import android.net.wifi.p2p.WifiP2pDevice;
+import android.net.wifi.p2p.WifiP2pManager;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import android.os.Bundle;
+
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapbox.mapboxsdk.maps.Style;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
     private MapView mapView;
+
+    private List<WifiP2pDevice> peers = new ArrayList<WifiP2pDevice>();
+
+    WifiManager mWifiMgr;
+    WifiP2pManager manager;
+    WifiP2pManager.Channel mChannel;
+    BroadcastReceiver mReceiver;
+    IntentFilter mIntentFilter;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Mapbox.getInstance(this, "pk.eyJ1IjoidnZud3UiLCJhIjoiY2p5MjN0NmdyMGl2bjNibHEydW1kM3R4diJ9.TVwh3UbhnFFQAXiH6_-kWg");
         setContentView(R.layout.activity_main);
+
+        //WIFI STUFF
+        mWifiMgr = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
+        mWifiMgr.setWifiEnabled(false);
+        manager = (WifiP2pManager) getApplicationContext().getSystemService(WIFI_P2P_SERVICE);
+        mChannel = manager.initialize(this, getMainLooper(), null);
+        mReceiver = new WiFiDirectBroadcastReceiver(manager, mChannel, this);
+        mIntentFilter = new IntentFilter();
+        mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
+        mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
+        mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
+        mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
+
+
         mapView = findViewById(R.id.mapView);
         mapView.onCreate(savedInstanceState);
         mapView.getMapAsync(new OnMapReadyCallback() {
@@ -33,7 +70,49 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         });
+
+        TextView textView = findViewById(R.id.text);
+        textView.setText("AFJHDFGKS");
+
+        final Button button = findViewById(R.id.connectButton);
+
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                System.out.println("Hello");
+                if (mWifiMgr.isWifiEnabled()) {
+                    mWifiMgr.setWifiEnabled(false);
+                    button.setText("Turn on wifi");
+                } else {
+                    mWifiMgr.setWifiEnabled(true);
+                    button.setText("Turn off wifi");
+                }
+            }
+        });
+
+        final Button discover = findViewById(R.id.discoverPeers);
+
+        discover.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                manager.discoverPeers(mChannel, new WifiP2pManager.ActionListener() {
+                    @Override
+                    public void onSuccess() {
+                        System.out.println("Success");
+                    }
+
+                    @Override
+                    public void onFailure(int reasonCode) {
+                        System.out.println("Fail");
+                        System.out.println(reasonCode);
+                    }
+                });
+            }
+        });
+
     }
+
+
 
     @Override
     public void onStart() {
@@ -45,12 +124,14 @@ public class MainActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
         mapView.onResume();
+        registerReceiver(mReceiver, mIntentFilter);
     }
 
     @Override
     public void onPause() {
         super.onPause();
         mapView.onPause();
+        unregisterReceiver(mReceiver);
     }
 
     @Override
