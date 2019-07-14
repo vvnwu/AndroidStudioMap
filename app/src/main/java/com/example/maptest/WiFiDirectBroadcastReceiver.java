@@ -98,6 +98,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                         if (peers.size() == 0) {
 //                            Log.d("notif", "No devices found");
 //                            return;
+                            Toast.makeText(activity, "Socket Created", Toast.LENGTH_SHORT).show();
                             Context context = activity.getApplicationContext();
                             FileServerAsyncTask listen = new FileServerAsyncTask(context,activity.findViewById(R.id.text));
                             Toast.makeText(activity, (String)listen.doInBackground(null), Toast.LENGTH_SHORT).show();
