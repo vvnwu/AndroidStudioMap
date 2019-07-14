@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: com.cloudant:cloudant-sync-datastore-android:2.4.0@jar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.cloudant/cloudant-sync-datastore-android/2.4.0/44a79281c7ea30c2c3884b355e299c5185dbe876/cloudant-sync-datastore-android-2.4.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.cloudant/cloudant-sync-datastore-android/2.4.0/3fd2d05241b28d34e8e8c5330c531a8570b0881/cloudant-sync-datastore-android-2.4.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
