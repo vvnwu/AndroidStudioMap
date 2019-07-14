@@ -25,7 +25,7 @@ Clone the repository to your local machine
 
  
 
-### C`lick Run`
+### `Click Run`
 
 
 
