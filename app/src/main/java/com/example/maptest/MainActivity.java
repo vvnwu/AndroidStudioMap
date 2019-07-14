@@ -73,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         TextView textView = findViewById(R.id.text);
-        textView.setText("AFJHDFGKS");
+        textView.setText("Location: Seattle");
 
         final Button button = findViewById(R.id.connectButton);
 

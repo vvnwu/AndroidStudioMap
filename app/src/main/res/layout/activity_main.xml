@@ -6,7 +6,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
-
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
     <com.mapbox.mapboxsdk.maps.MapView
         android:id="@+id/mapView"
         android:layout_width="match_parent"
@@ -25,23 +27,27 @@
             tools:layout_editor_absoluteX="116dp"
             tools:layout_editor_absoluteY="325dp" />
 
-        <Button
+        <Switch
+            android:layout_margin="20dp"
             android:id="@+id/connectButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Connect"
-            tools:layout_editor_absoluteX="104dp"
-            tools:layout_editor_absoluteY="377dp" />
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:text="Activate Wifi Direct search"
+            android:textSize="18sp"
+            />
 
         <Button
             android:id="@+id/discoverPeers"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Discover"
+            android:text="Broadcast"
             tools:layout_editor_absoluteX="104dp"
             tools:layout_editor_absoluteY="377dp" />
 
+
+
     </LinearLayout>
+    </RelativeLayout>
     <!--<TextView-->
     <!--android:layout_width="wrap_content"-->
     <!--android:layout_height="wrap_content"-->

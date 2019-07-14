@@ -45,23 +45,31 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                     public void onPeersAvailable(WifiP2pDeviceList peerList) {
 
                         List<WifiP2pDevice> refreshedPeers = new ArrayList<>(peerList.getDeviceList());
-                        Toast.makeText(activity, refreshedPeers.toString(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(activity, "Found peers!", Toast.LENGTH_SHORT).show();
 
                         WifiP2pConfig config = new WifiP2pConfig();
 
-                        config.deviceAddress = refreshedPeers.get(0).deviceAddress;
-                        wifiP2pManager.connect(channel, config, new WifiP2pManager.ActionListener() {
+                        try {
+                            config.deviceAddress = refreshedPeers.get(0).deviceAddress;
+                            Toast.makeText(activity, refreshedPeers.toString(), Toast.LENGTH_SHORT).show();
+                        } catch (ArrayIndexOutOfBoundsException e) {
+                            Toast.makeText(activity, "No valid peers, creating hotspot", Toast.LENGTH_SHORT).show();
+                        }
 
-                            @Override
-                            public void onSuccess() {
-                                Toast.makeText(activity, "Connected", Toast.LENGTH_SHORT).show();
-                            }
+                        if (config.deviceAddress != null) {
+                            wifiP2pManager.connect(channel, config, new WifiP2pManager.ActionListener() {
 
-                            @Override
-                            public void onFailure(int reason) {
-                                Toast.makeText(activity, "Not Connected", Toast.LENGTH_SHORT).show();
-                            }
-                        });
+                                @Override
+                                public void onSuccess() {
+                                    Toast.makeText(activity, "Connected", Toast.LENGTH_SHORT).show();
+                                }
+
+                                @Override
+                                public void onFailure(int reason) {
+                                    Toast.makeText(activity, "Not Connected", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
                     }
                 });
             }
