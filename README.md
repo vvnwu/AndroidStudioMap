@@ -3,7 +3,7 @@
 
 
 
-Releave O aims to provide accurate and accessable information following a nateral diaster.
+Releave aims to provide accurate and accessable information following a nateral diaster.
 
 Users can connect to each others phones via wifi passing information such as emergency meeting points and locations
 of friends or family.
