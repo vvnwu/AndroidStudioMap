@@ -14,7 +14,7 @@ of friends or family.
 
 
 Make sure you have an up to date version of Android studio installed With an up to date sdk emulator.
-### `git clone https://github.com/vvnwu/MapTest.git
+### `git clone https://github.com/vvnwu/Releave.git
 `
 
 Clone the repository to your local machine
