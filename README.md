@@ -3,17 +3,17 @@
 A native Android application, Releave aims to provide accurate and accessible information following a natural diaster.
 Users can connect to each other's phones via a network to pass critical information such as emergency meeting points and locations of friends or family.
 
-![Our Prototype](https://drive.google.com/file/d/13Utvs15gITFhtWKyCNjAQoEWEPgkFSrN/view?usp=sharing)
+<img src="https://github.com/vvnwu/Releave/blob/master/screencap.jpg" float="left" clear="right" height="600">
+
 
 
 ## Usage
-Make sure you have an up to date version of Android studio installed With an up to date sdk emulator.
-### git clone https://github.com/vvnwu/Releave.git
 
-Clone the repository to your local machine
-### 'Open the project folder in Android studio'
-
-### 'Click Run'
+#### Make sure you have an up to date version of Android studio installed With an up to date sdk emulator.
+#### git clone https://github.com/vvnwu/Releave.git
+#### Clone the repository to your local machine
+#### 'Open the project folder in Android studio'
+#### 'Click Run'
 
 ## Built With
 
